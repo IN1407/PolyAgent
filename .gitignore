@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+data/
+projects/
+.DS_Store
+.env
+.env.*
+!.env.example
+Forbidden_Object_V1/
+QA_2026-10-31.md

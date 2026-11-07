@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>PolyAgent</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand"><span class="brand-mark">P</span><span>PolyAgent</span></div>
+      <div class="side-heading">WORKSPACE</div>
+      <nav id="nav">
+        <button data-view="chat" class="nav-button active">Chat</button>
+        <button data-view="projects" class="nav-button">Projects</button>
+        <button data-view="harnesses" class="nav-button">Harnesses</button>
+        <button data-view="models" class="nav-button">Models & research</button>
+      </nav>
+      <div class="side-heading projects-heading">PROJECTS</div>
+      <div id="project-list" class="project-list"></div>
+      <button id="new-project-side" class="side-add">+ New project</button>
+      <div class="sidebar-foot"><span id="connection-dot" class="dot"></span><span id="connection-label">No harness connected</span></div>
+    </aside>
+    <main class="main">
+      <header class="topbar"><div><div class="eyebrow" id="view-eyebrow">PROJECT CHAT</div><h1 id="view-title">Chat</h1></div><div id="top-context" class="top-context"></div></header>
+      <div id="notice" class="notice" hidden></div>
+      <section id="view-chat" class="view chat-view">
+        <div id="chat-empty" class="empty-state"><div class="empty-icon">✳</div><h2>Start with a project</h2><p>Create a PolyAgent project, connect a coding harness, and select an orchestrator model to start a real coding chat.</p><button id="empty-create" class="primary">Create project</button></div>
+        <div id="chat-workspace" hidden>
+          <div class="chat-head"><div><strong id="chat-project-name"></strong><span id="chat-project-path"></span></div><div class="chat-head-actions"><button id="open-project-folder" class="subtle" type="button">Open folder</button><button id="chat-settings" class="subtle">Model settings</button></div></div>
+          <div class="conversation-bar"><label for="conversation-select">Chat</label><select id="conversation-select"></select><button id="new-chat" class="subtle" type="button">+ New chat</button></div>
+          <section id="agent-controls" class="agent-controls" aria-label="Agents in this chat" hidden></section>
+          <div id="chat-events" class="chat-events"></div>
+          <form id="composer" class="composer"><div id="harness-mode-controls" class="harness-mode-controls"></div><textarea id="message" rows="2" placeholder="Ask the orchestrator to work in this project..."></textarea><div class="composer-foot"><span id="composer-model">Select an orchestrator model</span><button class="primary" type="submit">Send</button></div></form>
+        </div>
+      </section>
+      <section id="view-projects" class="view" hidden><div class="section-head"><div><h2>Projects</h2><p>Harness sessions are initialized only when you start work.</p></div><button id="new-project-main" class="primary">New project</button></div><div id="project-cards" class="cards"></div><div id="project-config" class="panel" hidden></div></section>
+      <section id="view-harnesses" class="view" hidden><div class="section-head"><div><h2>Harness connections</h2><p>PolyAgent checks working CLIs first, then installed desktop apps.</p></div><button id="rescan-harnesses" class="subtle">Rescan</button></div><div id="harness-list" class="harness-list"></div><div class="info-panel"><strong>Native subagent routing</strong><p>Codex v2 exposes subagent activity and child thread IDs, but omits delegated prompts and starts children before PolyAgent can redirect them. This connection observes those calls but does not claim to reroute them.</p></div></section>
+      <section id="view-models" class="view" hidden><div class="section-head"><div><h2>Models & research</h2><p>Catalog discovery is live. Model access is confirmed by a successful turn in its harness.</p></div></div><div id="model-list" class="model-list"></div></section>
+    </main>
+  </div>
+  <dialog id="project-dialog"><form id="project-form" method="dialog"><div class="dialog-head"><h2>New project</h2><button type="button" class="icon-button" data-close>×</button></div><label>Project name<input name="name" required maxlength="100" placeholder="My application"></label><label>Directory <span class="muted">(optional)</span><input name="path" placeholder="Leave blank to create under PolyAgent/projects"></label><div class="dialog-actions"><button type="button" class="subtle" data-close>Cancel</button><button class="primary" type="submit">Create project</button></div></form></dialog>
+  <script src="/app.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,46 @@
+# PolyAgent
+
+PolyAgent is a local web application that coordinates coding harnesses. It uses their CLI or desktop app transports; it does not use provider SDKs for harness execution. Coding, terminal, file, web, and Git tools remain inside each harness.
+
+## Run
+
+Run `python3 -m pip install -r requirements.txt`, then `python3 server.py` from this directory and open [http://127.0.0.1:8765](http://127.0.0.1:8765). Create a PolyAgent project, connect a harness on the Harnesses screen, and assign models in Project settings. Python 3.10+ is required. The WebSocket transport dependency is used for DeepSeek's native Host; no harness or model SDK is used.
+
+Each project can contain multiple chats. Use **New chat** and the chat selector above the messages. Creating a chat is local and lazy; its harness session starts with the first message. Chat histories, native sessions, and subagent activity stay associated with the selected chat. Existing project history is preserved as Chat 1 when upgrading.
+
+The chat view shows the orchestrator and each PolyAgent-managed subagent with its model, harness, and live status. **Interrupt** requests the harness's own stop action for that chat; **Interrupt all** requests it for every running managed chat in the selected conversation. Completed chats stay visible. Native subagents that PolyAgent only observes are shown as activity events and are not presented as managed chat controls.
+
+Action approval and execution selectors appear above the composer for the selected harness. The last selections are remembered for new chats, while existing chats keep their choices. Harness connection cards also let you save defaults. **Use harness settings** leaves the choice with the harness. DeepSeek advertises its own Standard, PTC, Minimal, and Create presets and permission catalog; its native preset is fixed once the chat starts. The app route loads the desktop profile's user patch as a native CLI overlay, preserving its configured defaults and provider settings. Antigravity CLI writes explicitly selected tool permissions to its native settings file while preserving unrelated values. Approval choices are passed through the native transports.
+
+Controls use each harness's native vocabulary: Codex approval policy, sandbox, and collaboration mode; DeepSeek permission and agent presets; OpenCode tool permission rules and discovered primary agents; Grok permission and session modes; Antigravity app terminal and artifact review policies separately; and Antigravity CLI tool permission policy and execution mode. Options and descriptions from native catalogs are preserved. Settings submitted from the composer are tagged with their harness, including when Full Auto later chooses another harness. Choices unsupported by the currently connected app or CLI are omitted rather than sent to that transport. Existing combined Antigravity selections retain their previous artifact policy until you choose otherwise.
+
+PolyAgent checks a working CLI first. For Codex, it uses `codex app-server` or the runtime bundled with the desktop app. For Antigravity, it uses an authenticated `agy` CLI when available and falls back to the running Antigravity desktop app if the CLI is absent or fails. For OpenCode, it starts the CLI's local HTTP server, falling back to the executable bundled in an OpenCode desktop app. DeepSeek Harness uses `dsh --profile web --no-open --port 0`, with its official desktop app's bundled `dsh` as fallback. Grok Build uses `grok agent stdio`. Connections attempt the installed version directly without a version approval or revalidation gate. The local server binds to `127.0.0.1`; its database is `data/polyagent.sqlite3`.
+
+## Working integrations
+
+- **Antigravity CLI 1.4.7:** real model discovery, authenticated JSON event sessions, working directory association, chat continuation and resume, live tool and response events, and native `invoke_subagent` interception.
+- **Antigravity app 2.24.0:** real authentication and model discovery through the running app's local HTTPS interface; lazy native project creation; new chats in the project's folder; real turns, trajectories, and native `invoke_subagent` interception.
+- **Codex CLI or app-bundled runtime:** real authentication, model discovery, project directory association, persistent chats, turns, tool events, and native subagent observation.
+- **DeepSeek Harness:** native CLI Web Host connection, desktop profile configuration, model and preset discovery without a probe chat, directory-scoped sessions, continuation, tool updates, and native permission forwarding. Standard and PTC session selection, a real PTC response through a configured provider, and a real escalation rejection were exercised locally. Native subagent calls are observed; redirection is not claimed.
+- **OpenCode V2 CLI 2.1.4:** real model discovery from available providers, directory-scoped sessions, continued chats, tool activity, native `subagent` interception through a project plugin, and cross-harness routing to Codex. The same server transport can launch an app-bundled CLI; that fallback was exercised with an app-shaped test bundle and the real binary, but an installed OpenCode desktop app was not available for a live app test.
+
+## Additional CLI integration
+
+- **Grok Build:** CLI model discovery plus ACP stdio sessions, selected permission modes, plan/normal/ask modes, streamed responses, native permission requests, and continuation are implemented from the official source contract. The native task hook forwards work to a fresh subagent chat, blocks the original task, and sends the full response to the same Grok session. Grok Build is not installed here, so these changes remain source-based pending a live account run.
+
+Antigravity interception uses its documented workspace `PreToolUse` hook for `invoke_subagent`. PolyAgent extracts the native prompt, applies the active selection mode, starts a fresh subagent chat, sends the exact required first message, waits for the real answer, and returns that answer through the hook's denial reason. The native tool appears as denied in Antigravity because its hook contract offers gating and argument changes but no direct replacement tool result. Tests verified that the orchestrator reads and uses the returned answer, including a native Antigravity call routed to a fresh Codex chat. Ordinary tools are unaffected. PolyAgent merges its hook entry into an existing `.agents/hooks.json` and preserves other entries.
+
+OpenCode V2 uses its project plugin interface to replace only the native foreground `subagent` tool's executor. PolyAgent receives the actual prompt, creates a new chat in the selected harness, and returns the real response in OpenCode's native tool result shape. Follow-up calls with the returned session ID continue the same PolyAgent child chat. Unmanaged OpenCode chats and background subagent calls use OpenCode's original tool executor.
+
+Manual, Full Auto, Hybrid, and Ask Every Time subagent selection are implemented for intercepted Antigravity and OpenCode V2 foreground calls. The Auto Chooser reevaluates each new call with the selected model. Ask Every Time pauses the native call until the user selects a model. New subagents always get new chats and the exact first-message template; later messages go directly to the existing chat. A failed subagent can be replaced with another available model in automatic modes. Model research and user assessments are stored separately in SQLite. Model entries that disappear from a refreshed harness catalog are removed from the visible catalog while their research and user overrides remain saved. When a harness gives distinct model IDs the same display name, PolyAgent disambiguates the labels while retaining both selectable models.
+
+## Current limits
+
+- The installed Codex v2 native spawn event arrives after execution and lacks the delegated prompt. PolyAgent observes these calls but cannot redirect them or apply selection modes to them.
+- Antigravity's app protocol is undocumented. PolyAgent attempts the running interface across app versions and reports actual connection or protocol errors if that interface changes.
+- OpenCode V1 HTTP chat support is implemented from its published server API but has not had a live run here. Its native subagent calls are not redirected. OpenCode V2 background subagent calls retain their native behavior and are not redirected.
+- Other detected harnesses are shown as installations only. No chat or delegation support is claimed for them. Claude was not tested after its subscription was revoked.
+- DeepSeek's native Host, desktop configuration overlay, model discovery, and Standard/PTC session presets have been exercised locally. Model execution still depends on valid credentials in the chosen native provider. Grok Build remains uninstalled and its ACP permission/mode path has not had a live account run.
+- Automatic replacement based only on a later judgment that another model is better suited is not verified; failure replacement is implemented for automatic intercepted calls.
+
+See [HARNESS_RESEARCH.md](HARNESS_RESEARCH.md) for source and test evidence. Run `python3 -m unittest discover -s tests -v` and `node tests/test_ui.cjs` for local checks.
